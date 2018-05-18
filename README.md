@@ -15,32 +15,33 @@ With that done, you can now access any endpoint that requires authentication sim
 
 ## Anonymous Endpoints
 ```
-https://api.onepeloton.com/api/instructor/<id>
+https://api.onepeloton.com/api/instructor/<instructor id>
 https://api.onepeloton.com/api/ride/metadata_mappings
 ```
 
-## Priviledged Endpoints
+## Privileged Endpoints
 
-### Basic information about the logged in user
+### Essential information about the logged in user
 ```
 https://api.onepeloton.com/api/me
 ```
 
-### Endpoints that return data about the user
+### More detailed (and basic workout) info about the requested user
 ```
 https://api.onepeloton.com/api/user/<user id>
 https://api.onepeloton.com/api/user/<user id>/workouts
 https://api.onepeloton.com/api/user/<user id>/workouts?joins=ride,ride.instructor&limit=10&page=0
 ```
 
-### Returns data about a given ride the user took
+### Ride info (eg: class type, instructor, etc)
 ```
 https://api.onepeloton.com/api/ride/<ride id>
 https://api.onepeloton.com/api/ride/<ride id>/details
 ```
 
-### Return performance metrics for the ride, where each cycle is a 5 second average
+### Workout specific info (workout is generic, eg: ride vs tread. Note that IDs differ between workout, ride, tread)
 ```
+https://api.onepeloton.com/api/workout/<workout id>
 https://api.onepeloton.com/api/workout/<workout id>/performance_graph?every_n=5
 ```
 
