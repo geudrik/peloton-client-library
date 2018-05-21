@@ -15,6 +15,7 @@ With that done, you can now access any endpoint that requires authentication sim
 
 ## Anonymous Endpoints
 ```
+https://api.onepeloton.com/api/instructor
 https://api.onepeloton.com/api/instructor/<instructor id>
 https://api.onepeloton.com/api/ride/metadata_mappings
 ```
