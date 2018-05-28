@@ -39,6 +39,7 @@ https://api.onepeloton.com/api/user/<user id>/workouts?joins=ride,ride.instructo
 Note that workouts, in this context, are what a user did. So, a workout can either be a tread or bike workout.
 ```
 https://api.onepeloton.com/api/workout/<workout id>
+https://api.onepeloton.com/api/workout/<workout id>/joins=ride,ride.instructor&limit=10&page=0
 https://api.onepeloton.com/api/workout/<workout id>/performance_graph?every_n=5
 ```
 
