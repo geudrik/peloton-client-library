@@ -39,9 +39,11 @@ https://api.onepeloton.com/api/user/<user id>/workouts?joins=ride,ride.instructo
 Note that workouts, in this context, are what a user did. So, a workout can either be a tread or bike workout.
 ```
 https://api.onepeloton.com/api/workout/<workout id>
-https://api.onepeloton.com/api/workout/<workout id>/joins=ride,ride.instructor&limit=10&page=0
+https://api.onepeloton.com/api/workout/<workout id>/joins=ride,ride.instructor&limit=1&page=0
 https://api.onepeloton.com/api/workout/<workout id>/performance_graph?every_n=5
 ```
+
+It would appear that when you do a `limit=1&page=0`, the most recent workout will be returned, which is great!
 
 ### Ride Info
 
@@ -50,6 +52,10 @@ Rides are the classes that you _can_ take, not necessarily what you _have_ taken
 https://api.onepeloton.com/api/ride/<ride id>
 https://api.onepeloton.com/api/ride/<ride id>/details
 ```
+
+@pelotoncycle it would be awesome if you guys could post up some actual API docs! :heart: 
+
+These endppoints will likely not be super useful unless you're looking for class details about the workout you're looking at
 
 ### Requires header "peloton-platform: web" - no idea what other values are accepted for this header
 ```
