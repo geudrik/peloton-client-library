@@ -21,10 +21,32 @@ an actual web app that's making API calls to drive the UI. A+, friends.
 As I've been poking around in your WebUI, I've essentially been looking at the API calls that are made. I've
 been keeping notes on all of this [here](https://github.com/geudrik/peloton-api/blob/master/API_DOCS.md).
 
-### Usage
+### Using the Client Library
 Utilizing the library is pretty simple. A super quick example is below, with more thorough documentation to follow as I 
 find time (this is a side/pet project after all).
 
+#### Configuration
+The library requires a configuration file, whos path is either pulled from the environment variale `PELOTON_CONFIG`,
+or looked for in the hard-coded `~/.config/peloton` (which can be a symlink to a unified config if you have many). The
+only config block that the library looks for is shown below.
+
+```bash
+[peloton]
+username = Your_Peloton_Username_Or_Email
+password = Your_Peloton_Password
+
+# Optional: Whether or not to ignore warnings that are thrown (default: True)
+ignore_warnings = True
+
+# Optional: Verify SSL Authenticity (default: True)
+ssl_verify = True
+
+# Optional: Filepath to a local cert bundle. Useful when SSL MITM is in play (default: None)
+ssl_cert = ''
+
+```
+
+#### Example Usage
 ```python
 
 >>> from peloton import PelotonWorkout
