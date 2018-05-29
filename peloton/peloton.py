@@ -314,7 +314,11 @@ class PelotonWorkout(PelotonObject):
 
         self.id = kwargs.get('id')
 
-        self.ride = PelotonRide(**kwargs.get('ride'))
+        ride_data = kwargs.get('ride')
+        self.ride = NotLoaded()
+        if ride_data is not None:
+            self.ride = PelotonRide(**ride_data)
+
         self.metrics = NotLoaded()
 
         # List of achievements that were obtained during this workout
@@ -323,12 +327,12 @@ class PelotonWorkout(PelotonObject):
             self.achievements.append((achievement.name, achievement.description))
 
         # Not entirely certain what the difference is between these two fields
-        self.created = datetime.fromtimestamp(kwargs.get('created'), timezone.utc)
-        self.created_at = datetime.fromtimestamp(kwargs.get('created_at'), timezone.utc)
+        self.created = datetime.fromtimestamp(kwargs.get('created', 0), timezone.utc)
+        self.created_at = datetime.fromtimestamp(kwargs.get('created_at', 0), timezone.utc)
 
         # Time duration of this ride
-        self.start_time = datetime.fromtimestamp(kwargs.get('start_time'), timezone.utc)
-        self.end_time = datetime.fromtimestamp(kwargs.get('end_time'), timezone.utc)
+        self.start_time = datetime.fromtimestamp(kwargs.get('start_time', 0), timezone.utc)
+        self.end_time = datetime.fromtimestamp(kwargs.get('end_time', 0), timezone.utc)
 
         # What exercise type is this?
         self.fitness_discipline = kwargs.get('fitness_discipline')
@@ -348,11 +352,14 @@ class PelotonWorkout(PelotonObject):
         value = object.__getattribute__(self, attr)
 
         # Handle accessing NotLoaded attributes (yay lazy loading)
+        #   TODO: Handle ride laoding if its NotLoaded()
         if attr in ['metrics'] and type(value) is NotLoaded:
 
             metrics = self._get_metrics()
             self.metrics = metrics
             return metrics
+
+        return value
 
     @classmethod
     def get(cls, workout_id):
