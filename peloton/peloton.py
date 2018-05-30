@@ -79,6 +79,12 @@ class NotLoaded:
     pass
 
 
+class DataMissing:
+    """ Used to indicate that data is missing (eg: not h/r monitor used)
+    """
+    pass
+
+
 class PelotonException(Exception):
     """ This is our base exception class, that all other exceptions inherit from
     """
@@ -88,19 +94,28 @@ class PelotonException(Exception):
 class PelotonClientError(PelotonException):
     """ Client exception class
     """
-    pass
+    def __init__(self, message, response):
+        super(PelotonException, self).__init__(self, message)
+        self.message = message
+        self.response = response
 
 
 class PelotonServerError(PelotonException):
     """ Server exception class
     """
-    pass
+    def __init__(self, message, response):
+        super(PelotonException, self).__init__(self, message)
+        self.message = message
+        self.response = response
 
 
 class PelotonRedirectError(PelotonException):
     """ Maybe we'll see weird unexpected redirects?
     """
-    pass
+    def __init__(self, message, response):
+        super(PelotonException, self).__init__(self, message)
+        self.message = message
+        self.response = response
 
 
 class PelotonObject:
@@ -140,7 +155,7 @@ class PelotonObject:
                 dont_load.append(k)
 
         # We've gone through our pre-flight prep, now lets actually serailize our data
-        for k, v in obj_attrs.iteritems():
+        for k, v in obj_attrs.items():
 
             # Ignore this key if it's in our dont_load list or is private
             if k.startswith('_') or k in dont_load:
@@ -231,17 +246,17 @@ class PelotonAPI:
         get_logger().debug("Response {}: [{}]".format(resp.status_code, resp._content))
 
         # If we don't have a 200 code
-        if not (resp.status_code >= 200 and resp.status_code < 300):
+        if not (200 >= resp.status_code < 300):
 
             message = resp._contnet
 
-            if resp.status_code >= 300 and resp.status_code < 400:
+            if 300 <= resp.status_code < 400:
                 raise PelotonRedirectError("Unexpected Redirect", resp)
 
-            elif resp.status_code >= 400 and resp.status_code < 500:
+            elif 400 <= resp.status_code < 500:
                 raise PelotonClientError(message, resp)
 
-            elif resp.status_code >= 500 and resp.status_code < 600:
+            elif 500 <= resp.status_code < 600:
                 raise PelotonServerError(message, resp)
 
         return resp
@@ -267,20 +282,20 @@ class PelotonAPI:
         }
 
         cls.peloton_session = requests.Session()
-        r = cls.peloton_session.post(_BASE_URL + '/auth/login', json=payload, headers=cls.headers)
-        message = r._content
+        resp = cls.peloton_session.post(_BASE_URL + '/auth/login', json=payload, headers=cls.headers)
+        message = resp._content
 
-        if r.status_code >= 300 and r.status_code < 400:
-            raise PelotonRedirectError("Unexpected Redirect", r)
+        if 300 <= resp.status_code < 400:
+            raise PelotonRedirectError("Unexpected Redirect", resp)
 
-        elif r.status_code >= 400 and r.status_code < 500:
-            raise PelotonClientError(message, r)
+        elif 400 <= resp.status_code < 500:
+            raise PelotonClientError(message, resp)
 
-        elif r.status_code >= 500 and r.status_code < 600:
-            raise PelotonServerError(message, r)
+        elif 500 <= resp.status_code < 600:
+            raise PelotonServerError(message, resp)
 
         # Set our User ID on our class
-        cls.user_id = r.json()['user_id']
+        cls.user_id = resp.json()['user_id']
 
 
 class PelotonUser(PelotonObject):
@@ -294,7 +309,7 @@ class PelotonUser(PelotonObject):
     def __init__(self, **kwargs):
 
         self.username = kwargs.get('username')
-
+        self.id = kwargs.get('id')
 
     def __str__(self):
         return self.username
@@ -314,17 +329,21 @@ class PelotonWorkout(PelotonObject):
 
         self.id = kwargs.get('id')
 
-        ride_data = kwargs.get('ride')
+        # This is a bit weird, we can only get ride details if they come up from a users workout list via a join
         self.ride = NotLoaded()
-        if ride_data is not None:
-            self.ride = PelotonRide(**ride_data)
+        if kwargs.get('ride') is not None:
+            self.ride = PelotonRide(**kwargs.get('ride'))
 
+        # Hard-stop on metrics, we'll populate that below
         self.metrics = NotLoaded()
 
         # List of achievements that were obtained during this workout
-        self.achievements = []
-        for achievement in kwargs.get('achievement_templates', []):
-            self.achievements.append((achievement.name, achievement.description))
+        self.achievements = NotLoaded()
+        achievements = kwargs.get('achievement_templates')
+        if achievements is not None:
+            self.achievements = []
+            for achievement in achievements:
+                self.achievements.append((achievement['name'], achievement['description']))
 
         # Not entirely certain what the difference is between these two fields
         self.created = datetime.fromtimestamp(kwargs.get('created', 0), timezone.utc)
@@ -338,8 +357,9 @@ class PelotonWorkout(PelotonObject):
         self.fitness_discipline = kwargs.get('fitness_discipline')
 
         # Basic leaderboard stats
-        self.leaderboard_rank = kwargs.get('leaderboard_rank')
-        self.total_leaderboard_users = kwargs.get('total_leaderboard_users')
+        #   Need to call /api/workout/workout_id to get these two bits
+        self.leaderboard_rank = kwargs.get('leaderboard_rank', NotLoaded())
+        self.leaderboard_users = kwargs.get('total_leaderboard_users', NotLoaded())
 
         # Workout status (complete, in progress, etc)
         self.status = kwargs.get('status')
@@ -353,12 +373,27 @@ class PelotonWorkout(PelotonObject):
 
         # Handle accessing NotLoaded attributes (yay lazy loading)
         #   TODO: Handle ride laoding if its NotLoaded()
-        if attr in ['metrics'] and type(value) is NotLoaded:
+        if attr in ['metrics', 'leaderboard_rank', 'leaderboard_users', 'achievements'] and type(value) is NotLoaded:
 
-            metrics = self._get_metrics()
-            self.metrics = metrics
-            return metrics
+            if attr == 'metrics':
+                metrics = PelotonWorkoutMetricsFactory.get(self.id)
+                self.metrics = metrics
+                return metrics
 
+            elif attr.startswith('leaderboard_') or attr == 'achievements':
+                workout = PelotonWorkoutFactory.get(self.id)
+
+                # Load leaderboard stats
+                self.leaderboard_rank = workout.leaderboard_rank
+                self.leaderboard_users = workout.leaderboard_users
+
+                # Load our achievements
+                self.achievements = workout.achievements
+
+                # Return the value of the requested attribute
+                return getattr(self, attr)
+
+        # Return our default object (eg: NotLoaded()) if our requested attribute isn't expected
         return value
 
     @classmethod
@@ -373,12 +408,6 @@ class PelotonWorkout(PelotonObject):
         """ Return a list of all workouts
         """
         return PelotonWorkoutFactory.list()
-
-
-    def _get_metrics(self):
-        """ Private method to load metric data about the current workout
-        """
-        raise NotImplementedError()
 
 
 class PelotonRide(PelotonObject):
@@ -409,7 +438,7 @@ class PelotonMetric(PelotonObject):
 
     def __init__(self, **kwargs):
 
-        self.metrics = kwargs.get('values')
+        self.values = kwargs.get('values')
         self.average = kwargs.get('average_value')
         self.name = kwargs.get('display_name')
         self.unit = kwargs.get('display_unit')
@@ -420,13 +449,66 @@ class PelotonMetric(PelotonObject):
         return self.name
 
 
+class PelotonMetricSummary(PelotonObject):
+    """ An object that describes a summary of a metric set
+    """
+
+    def __init__(self, **kwargs):
+
+        self.name = kwargs.get('display_name')
+        self.value = kwargs.get('value')
+        self.unit = kwargs.get('display_unit')
+        self.slug = kwargs.get('slug')
+
+    def __str__(self):
+        return "{} ({})".format(self.name, self.unit)
+
+
+class PelotonWorkoutMetrics(PelotonObject):
+    """ An object that describes all of the metrics of a given workout
+    """
+
+    def __init__(self, **kwargs):
+        """ Take a metrics set and objectify it
+        """
+
+        self.workout_duration = kwargs.get('duration')
+        self.fitness_discipline = kwargs.get('segment_list')[0]['metrics_type']
+
+        # Build summary attributes
+        metric_summaries = ['total_output', 'distance', 'calories']
+        for metric in kwargs.get('summaries'):
+            if metric['slug'] not in metric_summaries:
+                get_logger().warning("Unknown metric summary {} found".format(metric['slug']))
+                continue
+
+            attr_name = metric['slug'] + '_summary'
+            if metric['slug'] == "total_output":
+                attr_name = "output_summary"
+
+            setattr(self, attr_name, PelotonMetricSummary(**metric))
+
+
+        # Build metric details
+        metric_categories = ['output', 'cadence', 'resistance', 'speed', 'heart_rate']
+        for metric in kwargs.get('metrics'):
+
+            if metric['slug'] not in metric_categories:
+                get_logger().warning("Unknown metric category {} found".format(metric['slug']))
+                continue
+
+            setattr(self, metric['slug'], PelotonMetric(**metric))
+
+    def __str__(self):
+        return self.fitness_discipline
+
+
 class PelotonInstructor(PelotonObject):
     """ A read-only class that outlines instructor details
 
     This class should never be invoked directly"""
 
     def __init__(self):
-
         raise NotImplementedError()
 
 
@@ -445,18 +527,16 @@ class PelotonWorkoutFactory(PelotonAPI):
     See PelotonWorkout for details
     """
 
-    last_page = 0
-
     @classmethod
     def list(cls, results_per_page=10):
         """ Return a list of PelotonWorkout instances that describe each workout
         """
 
         # We need a user ID to list all workouts. @pelotoncycle, please don't this :(
-        if PelotonAPI.user_id is None:
-            PelotonAPI._create_api_session()
+        if cls.user_id is None:
+            cls._create_api_session()
 
-        uri = '/api/user/{}/workouts'.format(PelotonAPI.user_id)
+        uri = '/api/user/{}/workouts'.format(cls.user_id)
         params = {
             'page': 0,
             'limit': results_per_page,
@@ -464,7 +544,7 @@ class PelotonWorkoutFactory(PelotonAPI):
         }
 
         # Get our first page, which includes number of successive pages
-        res = PelotonAPI._api_request(uri, params).json()
+        res = cls._api_request(uri, params).json()
 
         # Add this pages data to our return list
         ret = [PelotonWorkout(**workout) for workout in res['data']]
@@ -473,9 +553,35 @@ class PelotonWorkoutFactory(PelotonAPI):
         for i in range(1, res['page_count']):
 
             params['page'] += 1
-            res = PelotonAPI._api_request(uri, params).json()
+            res = cls._api_request(uri, params).json()
             [ret.append(PelotonWorkout(**workout)) for workout in res['data']]
 
         return ret
 
+    @classmethod
+    def get(cls, workout_id):
+        """ Get workout details by workout_id
+        """
+
+        uri = '/api/workout/{}'.format(workout_id)
+        workout = PelotonAPI._api_request(uri).json()
+        return PelotonWorkout(**workout)
+
+
+class PelotonWorkoutMetricsFactory(PelotonAPI):
+    """ Class to handle fetching and transformation of metric data
+    """
+
+    @classmethod
+    def get(cls, workout_id):
+        """ Returns a list of PelotonMetric instances for each metric type
+        """
+
+        uri = '/api/workout/{}/performance_graph'.format(workout_id)
+        params = {
+            'every_n': 1
+        }
+
+        res = cls._api_request(uri, params).json()
+        return PelotonWorkoutMetrics(**res)
 
