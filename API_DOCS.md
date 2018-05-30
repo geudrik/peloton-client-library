@@ -52,6 +52,15 @@ reuturns information about a workout. Makes sense. But. `/user/id/workouts?joins
 workout has _*different*_ information in each workout than what you get back from `/workout/id`. This is inconsistent,
 and even looking at the website, results in additional (and unecessary) API calls being made. :sad:
 
+For example, lets assume we're looking at the latest workout, in my case, workout id `9c0eb00ad49945acbb313c31cf51b5df`
+We can get this workout in one of two ways.
+* GET `workout/9c0eb00ad49945acbb313c31cf51b5df`
+* GET `user/my_user_id/workouts` -> `data[0]`
+
+If we look at the data returned from the first method, it has 27 top level keys. If we look at the second way, we have
+24 top level keys returned. The two I noticed are `total_leaderboard_users` and `leaderboard_rank`, but a quick diff
+would show them all.
+
 ### Ride Info
 
 Rides are the classes that you _can_ take, not necessarily what you _have_ taken/completed (that would be a workout). 
