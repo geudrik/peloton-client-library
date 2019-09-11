@@ -49,7 +49,7 @@ It would appear that when you do a `limit=1&page=0`, the most recent workout wil
 
 Update May 30: Seems like some of these workout endpoints aren't quite as user-friendly as once thought.. `/workout/id`
 reuturns information about a workout. Makes sense. But. `/user/id/workouts?joins..` returns a list of workouts, but each
-workout has _*different*_ information in each workout than what you get back from `/workout/id`. This is inconsistent,
+workout has _*different*_  (see, missing - leaderboard info is a prime example) information in each workout than what you get back from `/workout/id`. This is inconsistent,
 and even looking at the website, results in additional (and unecessary) API calls being made. :sad:
 
 For example, lets assume we're looking at the latest workout, in my case, workout id `9c0eb00ad49945acbb313c31cf51b5df`
