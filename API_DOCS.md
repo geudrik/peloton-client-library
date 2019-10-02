@@ -64,12 +64,50 @@ would show them all.
 ### Ride Info
 
 Rides are the classes that you _can_ take, not necessarily what you _have_ taken/completed (that would be a workout). 
-These endpoints give information about a specific class (see: ride. No idea what the Tread endpoint is as I adon't have 
-a tread or really looked into it)
+These endpoints give information about a specific class (see: ride.) 
 ```
 https://api.onepeloton.com/api/ride/<ride id>
 https://api.onepeloton.com/api/ride/<ride id>/details
 ```
+
+
+All classes, no matter the workout type seem to considered a "ride".  The most recent list of classes are available anonymously via this endpoint:
+```
+https://api.onepeloton.com/api/v2/ride/archived?browse_category=
+```
+Categories have straightforward names:
+- Cycling
+- Running
+- Outdoor
+- Strength
+- Yoga
+- Meditation
+- Stretching
+- Bootcamp
+- Walking
+- Cardio
+
+Querying this endpoint with a specific query parameter will return JSON(truncated).  This appears to be mainly used by the various applicatiions.  
+
+```
+"page_count": Number of pages
+"instructors": Instructor info and data
+"class_types": List of all possible class types, regardless of category
+"total": Total number of available classes?
+"data": The actual ride data, lot's of good info in here!
+"ride_types": Appears to be another version of class_types
+"count": ???
+"browse_categories": used in the web app to load images
+"fitness_disciplines": Sets of data, probably used by the app to associate IDs and names
+"show_next": default seems to be true
+"sort_by": default is scheduled start time
+"show_previous": default is false
+"page": current page
+"hide_explicit_rides": defaults to null
+```
+        
+
+
 
 @pelotoncycle it would be awesome if you guys could post up some actual API docs! :heart: 
 
