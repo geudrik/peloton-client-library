@@ -1,10 +1,10 @@
 ## Peloton Client Library
 Hello Peloton! I wanted to thank you for being sane people and utilizing an API to move data around, at the very
-least, from within your web app (I have no idea how you do it on the bike etc). 
+least, from within your web app (I have no idea how you do it on the bike etc).
 
 I wrote (see: am writing) this library for a couple reasons, not the least of which is to be able to mess around with
 my workout data, and eventually attempt to build (my first practical idea) an algorithm that predicts target resistance
-to match an instructors cadence/output requirement. For funsies. 
+to match an instructors cadence/output requirement. For funsies.
 
 I've tried to be as reasonable as I can in developing this client lib - I lazy load as much data as possible to limit API
 calls, and if you look in your logs, you'll see a header that clearly indicates that this library is making API calls
@@ -16,13 +16,13 @@ If you have any questions or concerns, please, ping me (I'm not hard to find).
 
 ### API Documentation
 This all started out of a curiosity when I looked at a ride details page. I threw open dev tools and .. boom, you've got
-an actual web app that's making API calls to drive the UI. A+, friends. 
+an actual web app that's making API calls to drive the UI. A+, friends.
 
 As I've been poking around in your WebUI, I've essentially been looking at the API calls that are made. I've
 been keeping notes on all of this [here](https://github.com/geudrik/peloton-api/blob/master/API_DOCS.md).
 
 ### Using the Client Library
-Utilizing the library is pretty simple. A super quick example is below, with more thorough documentation to follow as I 
+Utilizing the library is pretty simple. A super quick example is below, with more thorough documentation to follow as I
 find time (this is a side/pet project after all).
 
 #### Configuration
@@ -45,6 +45,8 @@ ssl_verify = True
 ssl_cert = ''
 
 ```
+
+You may also specify the environment variables `PELOTON_USERNAME` and `PELOTON_PASSWORD` which will take precedence over the config file.
 
 #### Example Usage
 ```python
