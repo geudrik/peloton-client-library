@@ -41,8 +41,8 @@ try:
     parser.read(os.path.expanduser(conf_path))
 
     # Mandatory credentials
-    PELOTON_USERNAME = os.envrion.get("PELETON_USERNAME") or parser.get("peloton", "username")
-    PELOTON_PASSWORD = os.envrion.get("PELETON_USERNAME") or parser.get("peloton", "password")
+    PELOTON_USERNAME = os.envrion.get("PELOTON_USERNAME") or parser.get("peloton", "username")
+    PELOTON_PASSWORD = os.envrion.get("PELOTON_USERNAME") or parser.get("peloton", "password")
 
     # Additional option to show or hide warnings
     try:
