@@ -17,6 +17,7 @@ _BASE_URL = 'https://api.onepeloton.com'
 # Being friendly, let Peloton know who we are (eg: not the web ui)
 _USER_AGENT = "peloton-client-library/{}".format(__version__)
 
+
 def get_logger():
     """ To change log level from calling code, use something like
         logging.getLogger("peloton").setLevel(logging.DEBUG)
@@ -24,7 +25,9 @@ def get_logger():
     logger = logging.getLogger("peloton")
     if not logger.handlers:
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s '
+            '[in %(pathname)s:%(lineno)d]')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
@@ -41,8 +44,10 @@ try:
     parser.read(os.path.expanduser(conf_path))
 
     # Mandatory credentials
-    PELOTON_USERNAME = os.envrion.get("PELETON_USERNAME") or parser.get("peloton", "username")
-    PELOTON_PASSWORD = os.envrion.get("PELETON_USERNAME") or parser.get("peloton", "password")
+    PELOTON_USERNAME = os.environ.get("PELOTON_USERNAME") \
+        or parser.get("peloton", "username")
+    PELOTON_PASSWORD = os.environ.get("PELOTON_USERNAME") \
+        or parser.get("peloton", "password")
 
     # Additional option to show or hide warnings
     try:
@@ -63,24 +68,30 @@ try:
     except:
         SSL_VERIFY = True
 
-    # If set, we'll use this cert to verify against. Useful when you're stuck behind SSL MITM
+    # If set, we'll use this cert to verify against. Useful when you're
+    # stuck behind SSL MITM
     try:
         SSL_CERT = parser.get("peloton", "ssl_cert")
     except:
         SSL_CERT = None
 
-except Exception as e:
-    get_logger().error("No `username` or `password` found in section `peloton` in ~/.config/peloton\n"
-                         "Please ensure you specify one prior to utilizing the API\n")
+except Exception:
+    get_logger().error(
+        "No `username` or `password` found in section `peloton` "
+        "in ~/.config/peloton\n"
+        "Please ensure you specify one prior to utilizing the API\n")
 
 if SHOW_WARNINGS:
     get_logger().setLevel(logging.WARNING)
 else:
     get_logger().setLevel(logging.ERROR)
 
+
 class NotLoaded:
-    """ In an effort to avoid pissing Peloton off, we lazy load as often as possible. This class
-    is utitilzed frequently within this module to indicate when data can be retrieved, as requested"""
+    """ In an effort to avoid pissing Peloton off, we lazy load as often
+        as possible. This class is utitilzed frequently within this module
+        to indicate when data can be retrieved, as requested
+    """
     pass
 
 
@@ -91,7 +102,8 @@ class DataMissing:
 
 
 class PelotonException(Exception):
-    """ This is our base exception class, that all other exceptions inherit from
+    """ This is our base exception class, that all other
+        exceptions inherit from
     """
     pass
 
@@ -128,11 +140,13 @@ class PelotonObject:
     """
 
     def serialize(self, depth=1, load_all=True):
-        """Ensures that everything has a .serialize() method so that all data is serializable
+        """Ensures that everything has a .serialize() method
+           so that all data is serializable
 
         Args:
             depth: level of nesting to include when serializing
-            load_all: whether or not to include lazy loaded data (eg: NotLoaded() instances)
+            load_all: whether or not to include lazy loaded
+                      data (eg: NotLoaded() instances)
         """
 
         # Dict to hold our returnable data
@@ -145,10 +159,12 @@ class PelotonObject:
         if depth == 0:
             return None
 
-        # List of keys that we will not be included in our serailizable output based on load_all
+        # List of keys that we will not be included in our serializable
+        # output based on load_all
         dont_load = []
 
-        # Load our NotLoaded() (lazy loading) instances if we're requesting to do so
+        # Load our NotLoaded() (lazy loading) instances if we're
+        # requesting to do so
         for k in self.__dict__:
             if load_all:
                 obj_attrs[k] = getattr(self, k)
@@ -159,7 +175,8 @@ class PelotonObject:
             if isinstance(raw_value, NotLoaded):
                 dont_load.append(k)
 
-        # We've gone through our pre-flight prep, now lets actually serailize our data
+        # We've gone through our pre-flight prep, now lets actually
+        # serialize our data
         for k, v in obj_attrs.items():
 
             # Ignore this key if it's in our dont_load list or is private
@@ -176,7 +193,8 @@ class PelotonObject:
                 for val in v:
                     if isinstance(val, PelotonObject):
                         if depth > 1:
-                            serialized_list.append(val.serialize(depth=depth - 1))
+                            serialized_list.append(
+                                val.serialize(depth=depth - 1))
 
                     elif isinstance(val, (datetime, date)):
                         serialized_list.append(val.isoformat())
@@ -187,7 +205,8 @@ class PelotonObject:
                     elif isinstance(val, (str, int, dict)):
                         serialized_list.append(val)
 
-                # Only add if we have data (this _can_ be an empty list in the event that our list is noting but
+                # Only add if we have data (this _can_ be an empty list
+                # in the event that our list is noting but
                 #   PelotonObject's and we're at/past our recursion depth)
                 if serialized_list:
                     ret[k] = serialized_list
@@ -220,10 +239,12 @@ class PelotonAPI:
     peloton_username = None
     peloton_password = None
 
-    # Hold a request.Session instance that we're going to rely on to make API calls
+    # Hold a request.Session instance that we're going to
+    # rely on to make API calls
     peloton_session = None
 
-    # Being friendly (by default), use the same page size that the Peloton website uses
+    # Being friendly (by default), use the same page size
+    # that the Peloton website uses
     page_size = 10
 
     # Hold our user ID (pulled when we authenticate to the API)
@@ -237,7 +258,8 @@ class PelotonAPI:
 
     @classmethod
     def _api_request(cls, uri, params={}):
-        """ Base function that everything will use under the hood to interact with the API
+        """ Base function that everything will use under the hood to
+            interact with the API
 
         Returns a requests response instance, or raises an exception on error
         """
@@ -247,8 +269,10 @@ class PelotonAPI:
             cls._create_api_session()
 
         get_logger().debug("Request {} [{}]".format(_BASE_URL + uri, params))
-        resp = cls.peloton_session.get(_BASE_URL + uri, headers=cls.headers, params=params)
-        get_logger().debug("Response {}: [{}]".format(resp.status_code, resp._content))
+        resp = cls.peloton_session.get(
+            _BASE_URL + uri, headers=cls.headers, params=params)
+        get_logger().debug("Response {}: [{}]".format(
+            resp.status_code, resp._content))
 
         # If we don't have a 200 code
         if not (200 >= resp.status_code < 300):
@@ -278,8 +302,10 @@ class PelotonAPI:
             cls.peloton_password = PELOTON_PASSWORD
 
         if cls.peloton_username is None or cls.peloton_password is None:
-            raise PelotonClientError("The Peloton Client Library requires a `username` and `password` be set in "
-                                     "`/.config/peloton, under section `peloton`")
+            raise PelotonClientError(
+                "The Peloton Client Library requires a `username` "
+                "and `password` be set in "
+                "`/.config/peloton, under section `peloton`")
 
         payload = {
             'username_or_email': cls.peloton_username,
@@ -287,7 +313,8 @@ class PelotonAPI:
         }
 
         cls.peloton_session = requests.Session()
-        resp = cls.peloton_session.post(_BASE_URL + '/auth/login', json=payload, headers=cls.headers)
+        resp = cls.peloton_session.post(
+            _BASE_URL + '/auth/login', json=payload, headers=cls.headers)
         message = resp._content
 
         if 300 <= resp.status_code < 400:
@@ -334,18 +361,23 @@ class PelotonWorkout(PelotonObject):
 
         self.id = kwargs.get('id')
 
-        # This is a bit weird, we can only get ride details if they come up from a users workout list via a join
+        # This is a bit weird, we can only get ride details if they
+        # come up from a users workout list via a join
         self.ride = NotLoaded()
         if kwargs.get('ride') is not None:
             self.ride = PelotonRide(**kwargs.get('ride'))
 
         # Not entirely certain what the difference is between these two fields
-        self.created = datetime.fromtimestamp(kwargs.get('created', 0), timezone.utc)
-        self.created_at = datetime.fromtimestamp(kwargs.get('created_at', 0), timezone.utc)
+        self.created = datetime.fromtimestamp(
+            kwargs.get('created', 0), timezone.utc)
+        self.created_at = datetime.fromtimestamp(
+            kwargs.get('created_at', 0), timezone.utc)
 
         # Time duration of this ride
-        self.start_time = datetime.fromtimestamp(kwargs.get('start_time', 0), timezone.utc)
-        self.end_time = datetime.fromtimestamp(kwargs.get('end_time', 0), timezone.utc)
+        self.start_time = datetime.fromtimestamp(
+            kwargs.get('start_time', 0), timezone.utc)
+        self.end_time = datetime.fromtimestamp(
+            kwargs.get('end_time', 0), timezone.utc)
 
         # What exercise type is this?
         self.fitness_discipline = kwargs.get('fitness_discipline')
@@ -357,18 +389,21 @@ class PelotonWorkout(PelotonObject):
         self.metrics_type = kwargs.get('metrics_type')
         self.metrics = kwargs.get('metrics', NotLoaded())
 
-        # Leaderboard stats need to call PelotonWorkoutFactory to get these two bits
+        # Leaderboard stats need to call PelotonWorkoutFactory to get
+        # these two bits
         self.leaderboard_rank = kwargs.get('leaderboard_rank', NotLoaded())
-        self.leaderboard_users = kwargs.get('total_leaderboard_users', NotLoaded())
-        self.personal_record = kwargs.get('is_total_work_personal_record', NotLoaded())
+        self.leaderboard_users = kwargs.get(
+            'total_leaderboard_users', NotLoaded())
+        self.personal_record = kwargs.get(
+            'is_total_work_personal_record', NotLoaded())
 
         # List of achievements that were obtained during this workout
         achievements = kwargs.get('achievement_templates', NotLoaded())
         if not isinstance(achievements, NotLoaded):
             self.achievements = []
             for achievement in achievements:
-                self.achievements.append(PelotonWorkoutAchievement(**achievement))
-
+                self.achievements.append(
+                    PelotonWorkoutAchievement(**achievement))
 
     def __str__(self):
         return self.fitness_discipline
@@ -379,11 +414,13 @@ class PelotonWorkout(PelotonObject):
 
         # Handle accessing NotLoaded attributes (yay lazy loading)
         #   TODO: Handle ride laoding if its NotLoaded()
-        if attr in ['leaderboard_rank', 'leaderboard_users', 'achievements', 'metrics'] and type(value) is NotLoaded:
+        if attr in ['leaderboard_rank', 'leaderboard_users',
+                    'achievements', 'metrics'] and type(value) is NotLoaded:
 
             if attr.startswith('leaderboard_') or attr == 'achievements':\
 
-                # Yes, this gets a fuckload of duplicate date, but the endpoints don't return consistent info!
+                # Yes, this gets a bunch of duplicate date, but the
+                # endpoints don't return consistent info!
                 workout = PelotonWorkoutFactory.get(self.id)
 
                 # Load leaderboard stats
@@ -397,7 +434,8 @@ class PelotonWorkout(PelotonObject):
                 # Return the value of the requested attribute
                 return getattr(self, attr)
 
-            # Metrics gets a dedicated conditional because it's a different endpoint
+            # Metrics gets a dedicated conditional because it's a
+            # different endpoint
             elif attr == "metrics":
                 metrics = PelotonWorkoutMetricsFactory.get(self.id)
                 self.metrics = metrics
@@ -411,13 +449,11 @@ class PelotonWorkout(PelotonObject):
         """
         return PelotonWorkoutFactory.get(workout_id)
 
-
     @classmethod
     def list(cls):
         """ Return a list of all workouts
         """
         return PelotonWorkoutFactory.list()
-
 
     @classmethod
     def latest(cls):
@@ -439,7 +475,8 @@ class PelotonRide(PelotonObject):
         self.description = kwargs.get('description')
         self.duration = kwargs.get('duration')
 
-        # When we make this Ride call from the workout factory, there is no instructor data
+        # When we make this Ride call from the workout factory, there
+        # is no instructor data
         if kwargs.get('instructor') is not None:
             self.instructor = PelotonInstructor(**kwargs.get('instructor'))
 
@@ -452,7 +489,8 @@ class PelotonRide(PelotonObject):
 
 
 class PelotonMetric(PelotonObject):
-    """ A read-only class that outlines some simple metric information about the workout
+    """ A read-only class that outlines some simple metric information
+        about the workout
     """
 
     def __init__(self, **kwargs):
@@ -498,7 +536,8 @@ class PelotonWorkoutMetrics(PelotonObject):
         metric_summaries = ['total_output', 'distance', 'calories']
         for metric in kwargs.get('summaries'):
             if metric['slug'] not in metric_summaries:
-                get_logger().warning("Unknown metric summary {} found".format(metric['slug']))
+                get_logger().warning(
+                    "Unknown metric summary {} found".format(metric['slug']))
                 continue
 
             attr_name = metric['slug'] + '_summary'
@@ -507,13 +546,14 @@ class PelotonWorkoutMetrics(PelotonObject):
 
             setattr(self, attr_name, PelotonMetricSummary(**metric))
 
-
         # Build metric details
-        metric_categories = ['output', 'cadence', 'resistance', 'speed', 'heart_rate']
+        metric_categories = [
+            'output', 'cadence', 'resistance', 'speed', 'heart_rate']
         for metric in kwargs.get('metrics'):
 
             if metric['slug'] not in metric_categories:
-                get_logger().warning("Unknown metric category {} found".format(metric['slug']))
+                get_logger().warning(
+                    "Unknown metric category {} found".format(metric['slug']))
                 continue
 
             setattr(self, metric['slug'], PelotonMetric(**metric))
@@ -539,7 +579,6 @@ class PelotonInstructor(PelotonObject):
         self.background = kwargs.get('background')
         self.short_bio = kwargs.get('short_bio')
 
-
     def __str__(self):
         return self.name
 
@@ -554,7 +593,8 @@ class PelotonWorkoutSegment(PelotonObject):
 
 
 class PelotonWorkoutAchievement(PelotonObject):
-    """ Class that represents a single achievement that a user earned during the workout
+    """ Class that represents a single achievement that a user
+        earned during the workout
     """
 
     def __init__(self, **kwargs):
@@ -574,10 +614,12 @@ class PelotonWorkoutFactory(PelotonAPI):
 
     @classmethod
     def list(cls, results_per_page=10):
-        """ Return a list of PelotonWorkout instances that describe each workout
+        """ Return a list of PelotonWorkout instances that describe
+            each workout
         """
 
-        # We need a user ID to list all workouts. @pelotoncycle, please don't do this :(
+        # We need a user ID to list all workouts. @pelotoncycle, please
+        # don't do this :(
         if cls.user_id is None:
             cls._create_api_session()
 
@@ -614,10 +656,12 @@ class PelotonWorkoutFactory(PelotonAPI):
 
     @classmethod
     def latest(cls):
-        """ Returns an instance of PelotonWorkout that represents the latest workout
+        """ Returns an instance of PelotonWorkout that represents
+            the latest workout
         """
 
-        # We need a user ID to list all workouts. @pelotoncycle, please don't do this :(
+        # We need a user ID to list all workouts. @pelotoncycle, please
+        # don't do this :(
         if cls.user_id is None:
             cls._create_api_session()
 
@@ -631,7 +675,8 @@ class PelotonWorkoutFactory(PelotonAPI):
         # Get our first page, which includes number of successive pages
         res = cls._api_request(uri, params).json()
 
-        # Return our single workout, without having to get a bunch of extra data from the API
+        # Return our single workout, without having to get a bunch of
+        # extra data from the API
         return PelotonWorkout(**res['data'][0])
 
 
