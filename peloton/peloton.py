@@ -111,6 +111,7 @@ class PelotonException(Exception):
 class PelotonClientError(PelotonException):
     """ Client exception class
     """
+
     def __init__(self, message, response):
         super(PelotonException, self).__init__(self, message)
         self.message = message
@@ -120,6 +121,7 @@ class PelotonClientError(PelotonException):
 class PelotonServerError(PelotonException):
     """ Server exception class
     """
+
     def __init__(self, message, response):
         super(PelotonException, self).__init__(self, message)
         self.message = message
@@ -129,6 +131,7 @@ class PelotonServerError(PelotonException):
 class PelotonRedirectError(PelotonException):
     """ Maybe we'll see weird unexpected redirects?
     """
+
     def __init__(self, message, response):
         super(PelotonException, self).__init__(self, message)
         self.message = message
@@ -377,7 +380,7 @@ class PelotonWorkout(PelotonObject):
         self.start_time = datetime.fromtimestamp(
             kwargs.get('start_time', 0), timezone.utc)
         self.end_time = datetime.fromtimestamp(
-            kwargs.get('end_time', 0), timezone.utc)
+            int(kwargs.get('end_time', 0) or 0), timezone.utc)
 
         # What exercise type is this?
         self.fitness_discipline = kwargs.get('fitness_discipline')
@@ -530,7 +533,8 @@ class PelotonWorkoutMetrics(PelotonObject):
         """
 
         self.workout_duration = kwargs.get('duration')
-        self.fitness_discipline = kwargs.get('segment_list')[0]['metrics_type']
+        self.fitness_discipline = kwargs.get('segment_list')[0]['metrics_type'] if len(
+            kwargs.get('segment_list')) else ''
 
         # Build summary attributes
         metric_summaries = ['total_output', 'distance', 'calories']
